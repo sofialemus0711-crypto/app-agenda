@@ -7,5 +7,5 @@
 // ejecuta el archivo supabase/schema.sql y pega aquí la URL y la "anon public key"
 // (Supabase → Project Settings → API). Ver README.md.
 
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_URL = 'https://remcbcshaljrwouueeit.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_W5Xt2Inj7I1tC1lkc0IbMg_2QH9OQwu';

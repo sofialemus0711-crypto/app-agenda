@@ -1,5 +1,5 @@
 // Service worker de MI AGENDA: permite abrir la app sin conexión y mostrar notificaciones.
-const CACHE = 'miagenda-v1';
+const CACHE = 'miagenda-v2';
 const ASSETS = [
   './',
   'index.html',
