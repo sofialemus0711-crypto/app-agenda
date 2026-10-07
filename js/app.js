@@ -5,6 +5,7 @@ import { renderWeek, goToToday } from './view-week.js';
 import { renderEvents } from './view-events.js';
 import { renderThings } from './view-things.js';
 import { renderUni } from './view-uni.js';
+import { seedUniversity } from './seed-uni.js';
 import { startReminders } from './reminders.js';
 import { startSync, onStatus } from './sync.js';
 import { openSyncSheet, statusLabel, statusKind } from './sync-ui.js';
@@ -84,6 +85,7 @@ onStatus((st) => {
   });
 });
 
+seedUniversity();
 render();
 startReminders(toast);
 startSync();

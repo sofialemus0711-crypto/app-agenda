@@ -202,6 +202,14 @@ ok(await A.locator('.cont', { hasText: 'Clase de inglés' }).count() === 0, '"Si
 // Universidad (aparte de Mi semana)
 console.log('\nCOMPUTADOR — Universidad');
 await A.click('.side-nav [data-nav="universidad"]'); await A.waitForTimeout(200);
+ok(await A.locator('.tt-class').count() === 9, 'Horario 2026-2 cargado: 9 clases');
+ok(await A.locator('.tt-class', { hasText: 'Fundamentos de Administración' }).count() === 1 && (await A.locator('.tt-class', { hasText: 'Fundamentos' }).textContent()).includes('6:00 – 9:00 p. m.'), 'Fundamentos de Administración el jueves 6:00 – 9:00 p. m.');
+ok(await A.locator('.tt-class', { hasText: 'Taller de Salud' }).count() === 0 && await A.locator('.tt-class', { hasText: 'Inducción' }).count() === 0, 'Sin Taller de Salud ni Inducción');
+await A.locator('.tt-class', { hasText: 'Frisbee' }).click();
+await A.click('.sheet [data-delete]'); await A.click('.sheet [data-yes]'); await A.waitForTimeout(250);
+await A.reload(); await A.waitForTimeout(400);
+ok(await A.locator('.tt-class').count() === 8 && await A.locator('.tt-class', { hasText: 'Frisbee' }).count() === 0, 'Una clase eliminada no vuelve a aparecer al recargar');
+await A.screenshot({ path: `${OUT}/t-desktop-uni-seed.png` });
 await A.click('.view-head [data-add]');
 await A.fill('.sheet input[name="title"]', 'Cálculo');
 for (const v of ['1', '3']) await A.locator(`.sheet .weekday input[value="${v}"]`).locator('xpath=..').click();
@@ -437,7 +445,7 @@ await A.click('.sidebar [data-sync]'); await A.click('.sheet [data-now]'); await
 await A.waitForTimeout(300);
 ok(await A.locator('.event', { hasText: 'Evento desde el celular' }).count() === 1, 'Computador ve el evento creado en el celular');
 await B.click('.tabbar [data-nav="universidad"]'); await B.waitForTimeout(200);
-ok(await B.locator('.uni-item', { hasText: 'Cálculo' }).count() === 2, 'Celular ve el horario de la universidad');
+ok(await B.locator('.uni-item', { hasText: 'Cálculo' }).count() === 2 && await B.locator('.uni-item').count() === 10, 'Celular ve el horario (sin duplicados y sin la clase eliminada)');
 await B.screenshot({ path: `${OUT}/t-mobile-uni.png` });
 // Cosas sueltas del celular combinadas con las del computador
 await A.click('.side-nav [data-nav="cosas"]'); await A.waitForTimeout(200);

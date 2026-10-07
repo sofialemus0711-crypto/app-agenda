@@ -90,6 +90,15 @@ export function remove(kind, id) {
   emit();
 }
 
+// Agrega elementos con id fijo solo si nunca han existido aquí (ni siquiera eliminados)
+export function seedOnce(kind, items) {
+  const missing = items.filter((it) => !state[kind].some((x) => x.id === it.id));
+  if (!missing.length) return;
+  state[kind].push(...missing.map((it) => ({ ...it })));
+  persist();
+  emit();
+}
+
 // ---- Usado por la sincronización ----
 
 // Todos los elementos (incluidas lápidas) con su tipo
