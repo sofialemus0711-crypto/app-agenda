@@ -230,7 +230,7 @@ a { color: inherit; text-decoration: none; }
 }
 .grid-cell.is-today { background: var(--lavender-soft); }
 .grid-cell:hover { background: rgba(197, 160, 89, 0.06); }
-.grid-cell:hover:empty::after, .grid-cell:hover:not(:has(.chip))::after {
+.grid-cell:hover:empty::after, .grid-cell:hover:not(:has(.chip, .cont))::after {
   content: '+'; position: absolute; inset: 0; display: grid; place-items: center;
   color: var(--gold); font-size: 20px; font-weight: 300;
 }
@@ -434,7 +434,7 @@ a { color: inherit; text-decoration: none; }
   .sync-icon .sync-dot { position: absolute; right: 9px; bottom: 11px; }
 
   .tabbar {
-    display: grid; grid-template-columns: repeat(3, 1fr);
+    display: grid; grid-template-columns: repeat(4, 1fr);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     height: calc(var(--tabbar) + var(--safe-b)); padding-bottom: var(--safe-b);
     background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -457,7 +457,8 @@ a { color: inherit; text-decoration: none; }
   .view-week .view-head .eyebrow { margin-bottom: 2px; }
   .view-week .view-head h1 { font-size: 21px; }
   .view-actions { gap: 12px; }
-  .view-events .view-actions, .view-events .view-head .btn { display: none; }
+  .view-events .view-actions, .view-events .view-head .btn,
+  .view-uni .view-actions { display: none; }
 
   .week-nav { display: flex; width: 100%; justify-content: space-between; }
   .week-nav .link-btn { flex: 1; justify-content: center; min-height: 44px; padding: 8px 6px; font-size: 14px; }
@@ -572,3 +573,52 @@ a { color: inherit; text-decoration: none; }
 .grid-cell .chip-title { flex: 1 1 64px; min-width: 0; }
 .grid-cell .chip-meta { flex: none; padding-top: 1px; }
 .grid-cell .chip-check { position: static; order: 3; padding-top: 1px; }
+
+/* Bloque de continuación: la actividad sigue durante esta hora */
+.cont {
+  display: flex; align-items: center; min-height: 26px; padding: 3px 9px 3px 11px; border-radius: 9px;
+  background: var(--olive-soft); border-left: 2px solid var(--olive); opacity: .55;
+  font-size: 12px; color: var(--ink-2); cursor: pointer;
+}
+.cont span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cont::before { content: '↳'; margin-right: 5px; color: var(--ink-3); }
+.cont.is-done { background: var(--lavender-soft); border-left-color: var(--lavender); }
+.day-items .cont { min-height: 34px; border-radius: 12px; font-size: 13.5px; }
+
+/* ---------- UNIVERSIDAD ---------- */
+.tt-wrap { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
+.tt { display: grid; min-width: 760px; }
+.tt-corner, .tt-day { border-bottom: 1px solid var(--line); }
+.tt-day {
+  padding: 18px 8px 14px; text-align: center; border-left: 1px solid var(--line);
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3);
+}
+.tt-day.is-today { color: var(--gold); }
+.tt-hours div { padding: 8px 14px 0 18px; font-size: 12px; color: var(--ink-3); border-bottom: 1px solid var(--line); box-sizing: border-box; white-space: nowrap; }
+.tt-col {
+  position: relative; border-left: 1px solid var(--line);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 59px, var(--line) 59px 60px);
+}
+.tt-col.is-today { background-color: var(--lavender-soft); }
+.tt-class {
+  position: absolute; left: 4px; right: 4px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 2px; padding: 7px 10px;
+  border-radius: 10px; background: var(--lavender-soft); border-left: 3px solid var(--lavender);
+  cursor: pointer; transition: box-shadow .15s;
+}
+.tt-class:hover { box-shadow: 0 2px 10px rgba(41, 40, 39, 0.08); }
+.tt-title { font-size: 14px; line-height: 1.25; }
+.tt-meta { font-size: 12px; color: var(--ink-3); }
+
+.uni-item {
+  display: flex; align-items: baseline; gap: 12px; margin-top: 6px; padding: 12px 12px 12px 14px;
+  border-radius: 12px; background: var(--lavender-soft); border-left: 3px solid var(--lavender); cursor: pointer;
+}
+.uni-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 15px; }
+.view-uni .week-list-head { cursor: default; }
+.view-uni .week-list-head small { font-family: var(--sans); font-size: 12px; color: var(--gold); letter-spacing: .1em; text-transform: uppercase; }
+.view-uni .wl-time { min-width: 92px; }
+
+@media (max-width: 760px) {
+  .tabbar a { font-size: 11px; }
+}

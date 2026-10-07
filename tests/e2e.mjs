@@ -35,9 +35,11 @@ const errors = [];
 async function newPage(mobile, extra = {}) {
   const ctx = await browser.newContext({
     viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 },
-    isMobile: mobile, hasTouch: mobile, locale: 'es-CO', timezoneId: 'America/Bogota', ...extra,
+    isMobile: mobile, hasTouch: mobile, locale: 'es-CO', timezoneId: 'America/Bogota', serviceWorkers: 'block', ...extra,
   });
   await ctx.grantPermissions(['notifications'], { origin: 'http://localhost:8080' });
+  // La prueba nunca usa la base de datos real: se conecta a la simulada desde la app
+  await ctx.route('**/js/config.js', (r) => r.fulfill({ contentType: 'text/javascript', body: "export const SUPABASE_URL = ''; export const SUPABASE_ANON_KEY = '';" }));
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(e.message));
   // (el 400 esperado viene de la prueba de contraseña incorrecta)
@@ -176,6 +178,53 @@ await A.selectOption('.sheet select[name="time"]', '15:30');
 await saveSheet(A);
 ok(await chipIn(A, dayKey(2, 2), 15, 'Dentista').count() === 1, '"Otra fecha…" lleva a esa semana y muestra la actividad (3:30 p. m.)');
 await A.click('[data-week="0"]');
+
+// Hora de finalización
+await cell(A, dayKey(0), 14).click();
+await A.fill('.sheet input[name="title"]', 'Clase de inglés');
+ok(await A.locator('.sheet select[name="endTime"]').inputValue() === '15:00', 'Hora de fin sugerida: 1 hora después');
+await A.selectOption('.sheet select[name="endTime"]', '16:00');
+await saveSheet(A);
+const ing = chipIn(A, dayKey(0), 14, 'Clase de inglés');
+ok(await ing.count() === 1 && (await ing.textContent()).includes('2:00 – 4:00 p. m.'), 'Muestra "2:00 – 4:00 p. m."');
+ok(await cell(A, dayKey(0), 15).locator('.cont', { hasText: 'Clase de inglés' }).count() === 1 && await cell(A, dayKey(0), 16).locator('.cont').count() === 0, 'Ocupa también la hora de las 3:00 (hasta las 4:00)');
+await ing.click();
+await A.selectOption('.sheet select[name="time"]', '15:00');
+ok(await A.locator('.sheet select[name="endTime"]').inputValue() === '17:00', 'Al cambiar el inicio, el fin conserva la duración');
+await saveSheet(A);
+ok(await chipIn(A, dayKey(0), 15, 'Clase de inglés').count() === 1 && await cell(A, dayKey(0), 16).locator('.cont', { hasText: 'Clase de inglés' }).count() === 1, 'Editada a 3:00 – 5:00 p. m.');
+await cell(A, dayKey(0), 16).locator('.cont').click();
+ok((await A.locator('.sheet-head h2').textContent()) === 'Editar actividad', 'Tocar la continuación abre la actividad');
+await A.selectOption('.sheet select[name="endTime"]', '');
+await saveSheet(A);
+ok(await A.locator('.cont', { hasText: 'Clase de inglés' }).count() === 0, '"Sin hora de fin" también funciona');
+
+// Universidad (aparte de Mi semana)
+console.log('\nCOMPUTADOR — Universidad');
+await A.click('.side-nav [data-nav="universidad"]'); await A.waitForTimeout(200);
+await A.click('.view-head [data-add]');
+await A.fill('.sheet input[name="title"]', 'Cálculo');
+for (const v of ['1', '3']) await A.locator(`.sheet .weekday input[value="${v}"]`).locator('xpath=..').click();
+await A.selectOption('.sheet select[name="time"]', '06:45');
+await A.selectOption('.sheet select[name="endTime"]', '08:45');
+await A.fill('.sheet input[name="room"]', 'Bloque 3 · 204');
+await saveSheet(A);
+ok(await A.locator('.tt-class', { hasText: 'Cálculo' }).count() === 2, 'Clase en el horario lunes y miércoles');
+ok((await A.locator('.tt-class', { hasText: 'Cálculo' }).first().textContent()).includes('6:45 – 8:45 a. m.') && (await A.locator('.tt-class').first().textContent()).includes('Bloque 3'), 'Muestra horas (cada 15 min) y salón');
+const tth = await A.locator('.tt-class').first().evaluate((e) => e.offsetHeight);
+ok(tth > 100, 'El bloque ocupa las 2 horas de clase');
+await A.click('.view-head [data-add]');
+await A.fill('.sheet input[name="title"]', 'Sin días');
+await saveSheet(A);
+ok(await A.locator('.sheet .form-error').isVisible(), 'Pide elegir al menos un día');
+await A.click('.sheet [data-close]'); await A.waitForTimeout(250);
+await A.locator('.tt-class').first().click();
+await A.fill('.sheet input[name="room"]', 'Bloque 5 · 101');
+await saveSheet(A);
+ok(await A.locator('.tt-class', { hasText: 'Bloque 5' }).count() === 2, 'Clase editada');
+await A.screenshot({ path: `${OUT}/t-desktop-uni.png` });
+await A.click('.side-nav [data-nav="semana"]'); await A.waitForTimeout(200);
+ok(await A.locator('.chip, .cont', { hasText: 'Cálculo' }).count() === 0, 'Las clases NO aparecen en Mi semana');
 await A.screenshot({ path: `${OUT}/t-desktop-week.png` });
 
 // ======================= EVENTOS =======================
@@ -253,7 +302,6 @@ console.log('\nRECORDATORIOS');
   await R.clock.install({ time: new Date('2026-10-07T14:40:00-05:00') });
   await R.goto(BASE);
   await R.waitForSelector('.week-grid');
-  await R.evaluate(() => navigator.serviceWorker.ready);
   // actividad hoy (miércoles) 3:00 p. m. con aviso 15 min antes
   await cell(R, '2026-10-07', 15).click();
   await R.fill('.sheet input[name="title"]', 'Reunión');
@@ -290,7 +338,7 @@ console.log('\nCELULAR');
 const { ctx: ctxB, page: B } = await newPage(true);
 await B.goto(BASE);
 await B.waitForSelector('.day-list');
-ok(await B.locator('.sidebar').isHidden() && await B.locator('.tabbar').isVisible(), 'Barra inferior: Mi semana | Eventos | Cosas sueltas');
+ok(await B.locator('.sidebar').isHidden() && await B.locator('.tabbar a').count() === 4, 'Barra inferior: Mi semana | Eventos | Cosas sueltas | Universidad');
 ok(await B.locator('.week-grid').count() === 0, 'En celular no se reduce la cuadrícula: vista por día');
 const dayTitle = (await B.locator('.day-title').innerText()).replace(/\s+/g, ' ');
 ok(dayTitle.length > 5, 'Encabezado del día: ' + dayTitle);
@@ -388,6 +436,9 @@ await A.click('.side-nav [data-nav="eventos"]'); await A.waitForTimeout(200);
 await A.click('.sidebar [data-sync]'); await A.click('.sheet [data-now]'); await A.waitForTimeout(800); await A.click('.sheet [data-close]');
 await A.waitForTimeout(300);
 ok(await A.locator('.event', { hasText: 'Evento desde el celular' }).count() === 1, 'Computador ve el evento creado en el celular');
+await B.click('.tabbar [data-nav="universidad"]'); await B.waitForTimeout(200);
+ok(await B.locator('.uni-item', { hasText: 'Cálculo' }).count() === 2, 'Celular ve el horario de la universidad');
+await B.screenshot({ path: `${OUT}/t-mobile-uni.png` });
 // Cosas sueltas del celular combinadas con las del computador
 await A.click('.side-nav [data-nav="cosas"]'); await A.waitForTimeout(200);
 ok(await A.locator('.thing', { hasText: 'Comprar regalo' }).count() === 1 && await A.locator('.thing', { hasText: 'Llamar a María' }).count() === 1, 'Las cosas sueltas de ambos dispositivos se combinan');

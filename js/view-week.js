@@ -4,10 +4,11 @@ import * as store from './store.js';
 import {
   DAY_NAMES, DAY_SHORT, DAY_LETTER, START_HOUR, END_HOUR,
   todayKey, mondayOf, addDays, weekDays, weekday, fromKey, formatTime, hourLabel, hourOf,
-  timeOptions, formatWeekRange, formatLongDay, formatDayMonth,
+  timeOptions, formatWeekRange, formatLongDay, formatDayMonth, formatRange, toMinutes, fromMinutes,
 } from './dates.js';
 import {
   activitiesOn, isDone, toggleDone, saveActivity, moveActivity, isRepeating, repeatSummary, REMINDER_OPTIONS,
+  continuationHours,
 } from './agenda.js';
 import { esc, icons, showSheet, closeSheet, toast, confirmSheet } from './ui.js';
 import { askPermission } from './reminders.js';
@@ -74,8 +75,10 @@ function desktopGrid(days) {
       const cells = days
         .map((d) => {
           const items = perDay[d].filter((a) => slotHour(a.time) === h);
+          const conts = perDay[d].filter((a) => slotHour(a.time) !== h && continuationHours(a).includes(h));
           return `<div class="grid-cell ${d === today ? 'is-today' : ''}" data-slot data-date="${d}" data-hour="${h}"
                     role="button" tabindex="-1" aria-label="${esc(DAY_NAMES[weekday(d) - 1] + ' ' + hourLabel(h))}">
+                    ${conts.map((a) => contBlock(a, d)).join('')}
                     ${items.map((a) => chip(a, d)).join('')}
                   </div>`;
         })
@@ -100,18 +103,24 @@ function slotHour(time) {
 
 function chip(a, date) {
   const done = isDone(a, date);
-  const showTime = !a.time.endsWith(':00') || hourOf(a.time) < START_HOUR || hourOf(a.time) > END_HOUR;
+  const showTime = a.endTime || !a.time.endsWith(':00') || hourOf(a.time) < START_HOUR || hourOf(a.time) > END_HOUR;
   return `
     <div class="chip ${done ? 'is-done' : ''} ${isRepeating(a) ? 'is-repeat' : ''}" data-activity="${a.id}" data-date="${date}" tabindex="0" role="button"
-         aria-label="${esc(a.title)}, ${esc(formatTime(a.time))}${done ? ', realizada' : ''}">
+         aria-label="${esc(a.title)}, ${esc(formatRange(a.time, a.endTime))}${done ? ', realizada' : ''}">
       ${done ? `<span class="chip-check">${icons.check}</span>` : ''}
       <span class="chip-title">${esc(a.title)}</span>
       <span class="chip-meta">
-        ${showTime ? `<span>${esc(formatTime(a.time))}</span>` : ''}
+        ${showTime ? `<span>${esc(formatRange(a.time, a.endTime))}</span>` : ''}
         ${isRepeating(a) ? `<span class="mini-icon" title="${esc(repeatSummary(a))}">${icons.repeat}</span>` : ''}
         ${a.reminder ? `<span class="mini-icon" title="Con recordatorio">${icons.bell}</span>` : ''}
       </span>
     </div>`;
+}
+
+// Bloque que indica que una actividad sigue en curso durante esta hora
+function contBlock(a, date) {
+  return `<div class="cont ${isDone(a, date) ? 'is-done' : ''}" data-open-activity="${a.id}" data-date="${date}"
+               role="button" tabindex="0" aria-label="${esc(a.title)} (continúa)"><span>${esc(a.title)}</span></div>`;
 }
 
 // ---------- Celular: día y semana ----------
@@ -158,12 +167,14 @@ function mobileDay(date) {
       const here = items.filter((a) => hourOf(a.time) === h);
       const extra = h === START_HOUR ? before : h === END_HOUR ? after : [];
       const all = [...extra, ...here];
+      const conts = items.filter((a) => !all.includes(a) && continuationHours(a).includes(h));
       return `
-        <div class="day-row ${all.length ? 'has-items' : ''}" data-slot data-date="${date}" data-hour="${h}">
+        <div class="day-row ${all.length || conts.length ? 'has-items' : ''}" data-slot data-date="${date}" data-hour="${h}">
           <div class="day-hour">${esc(hourLabel(h))}</div>
           <div class="day-items">
+            ${conts.map((a) => contBlock(a, date)).join('')}
             ${all.map((a) => dayItem(a, date)).join('')}
-            ${all.length ? '' : '<span class="day-empty" aria-hidden="true">+</span>'}
+            ${all.length || conts.length ? '' : '<span class="day-empty" aria-hidden="true">+</span>'}
           </div>
         </div>`;
     })
@@ -179,7 +190,7 @@ function dayItem(a, date) {
       <div class="day-item-text">
         <span class="chip-title">${esc(a.title)}</span>
         <span class="chip-meta">
-          <span>${esc(formatTime(a.time))}</span>
+          <span>${esc(formatRange(a.time, a.endTime))}</span>
           ${isRepeating(a) ? `<span class="mini-icon">${icons.repeat}</span><span>${esc(repeatSummary(a))}</span>` : ''}
           ${a.reminder ? `<span class="mini-icon" title="Con recordatorio">${icons.bell}</span>` : ''}
         </span>
@@ -202,7 +213,7 @@ function mobileWeekList(days) {
             ? items
                 .map((a) => `
                   <div class="week-list-item chip ${isDone(a, d) ? 'is-done' : ''}" data-activity="${a.id}" data-date="${d}" role="button" tabindex="0">
-                    <span class="wl-time">${esc(formatTime(a.time))}</span>
+                    <span class="wl-time">${esc(formatRange(a.time, a.endTime))}</span>
                     <span class="chip-title">${esc(a.title)}</span>
                     ${isDone(a, d) ? `<span class="chip-check">${icons.check}</span>` : ''}
                   </div>`)
@@ -269,9 +280,9 @@ function bind(root) {
       toggleDone(item.dataset.activity, item.dataset.date);
       return;
     }
-    const act = t.closest('[data-activity]');
+    const act = t.closest('[data-activity], [data-open-activity]');
     if (act) {
-      const a = store.get('activities', act.dataset.activity);
+      const a = store.get('activities', act.dataset.activity || act.dataset.openActivity);
       if (a) openActivityForm({ activity: a, date: act.dataset.date });
       return;
     }
@@ -283,7 +294,7 @@ function bind(root) {
   });
 
   section.addEventListener('keydown', (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-activity]')) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-activity], [data-open-activity]')) {
       e.preventDefault();
       e.target.click();
     }
@@ -429,8 +440,7 @@ export function openActivityForm({ activity = null, date, time = '09:00' }) {
   const done = activity ? isDone(activity, occDate) : false;
 
   const weekOfDate = weekDays(mondayOf(selectedDate));
-  const times = timeOptions();
-  if (!times.includes(selectedTime)) times.push(selectedTime), times.sort();
+  const selectedEnd = activity ? activity.endTime || '' : fromMinutes(toMinutes(selectedTime) + 60);
 
   const dayOptions = weekOfDate
     .map((d, i) => `<option value="${d}" ${d === selectedDate ? 'selected' : ''}>${DAY_NAMES[i]} ${formatDayMonth(d)}</option>`)
@@ -444,22 +454,16 @@ export function openActivityForm({ activity = null, date, time = '09:00' }) {
                value="${esc(activity ? activity.title : '')}" placeholder="¿Qué vas a hacer?" ${editing ? '' : 'autofocus'}>
       </label>
 
-      <div class="field-row">
-        <label class="field" data-day-field>
+      <label class="field" data-day-field>
           <span class="field-label">Día</span>
           <select name="day">
             ${dayOptions}
             <option value="other">Otra fecha…</option>
           </select>
           <input name="otherDate" type="date" class="other-date" hidden value="${selectedDate}">
-        </label>
-        <label class="field">
-          <span class="field-label">Hora</span>
-          <select name="time">
-            ${times.map((t) => `<option value="${t}" ${t === selectedTime ? 'selected' : ''}>${esc(formatTime(t))}</option>`).join('')}
-          </select>
-        </label>
-      </div>
+      </label>
+
+      ${timeFields(selectedTime, selectedEnd)}
 
       <div class="field">
         <label class="field-label" for="repeat-select">Repetir</label>
@@ -517,6 +521,7 @@ export function openActivityForm({ activity = null, date, time = '09:00' }) {
 
       repeatSel.value = presetFor(repeatDays);
       syncPicker();
+      wireTimeFields(form);
 
       repeatSel.addEventListener('change', () => {
         const v = repeatSel.value;
@@ -559,6 +564,7 @@ export function openActivityForm({ activity = null, date, time = '09:00' }) {
           id: activity && activity.id,
           title,
           time: form.time.value,
+          endTime: form.endTime.value,
           date: repeating ? (theDate || view.weekStart) : theDate,
           repeatDays: repeating ? repeatDays : [],
           reminder: reminderVal,
@@ -604,6 +610,51 @@ export function openActivityForm({ activity = null, date, time = '09:00' }) {
         });
       }
     },
+  });
+}
+
+// ---------- Campos "Desde" y "Hasta" (también los usa el horario de la universidad) ----------
+
+function timeList(step, extra) {
+  const list = timeOptions(step);
+  for (const t of extra) if (t && !list.includes(t)) list.push(t);
+  return list.sort();
+}
+
+function endOptions(start, end, step) {
+  const s = toMinutes(start);
+  return `<option value="" ${end ? '' : 'selected'}>Sin hora de fin</option>` +
+    timeList(step, [end]).filter((t) => toMinutes(t) > s)
+      .map((t) => `<option value="${t}" ${t === end ? 'selected' : ''}>${esc(formatTime(t))}</option>`).join('');
+}
+
+export function timeFields(start, end, step = 30, endLabel = 'Hasta') {
+  return `
+      <div class="field-row" data-step="${step}">
+        <label class="field">
+          <span class="field-label">Desde</span>
+          <select name="time">
+            ${timeList(step, [start]).map((t) => `<option value="${t}" ${t === start ? 'selected' : ''}>${esc(formatTime(t))}</option>`).join('')}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">${endLabel}</span>
+          <select name="endTime">${endOptions(start, end, step)}</select>
+        </label>
+      </div>`;
+}
+
+// Al cambiar la hora de inicio, la de fin se corre para conservar la duración
+export function wireTimeFields(form) {
+  const step = Number(form.querySelector('[data-step]').dataset.step);
+  let prevStart = form.time.value;
+  form.time.addEventListener('change', () => {
+    const end = form.endTime.value;
+    let newEnd = '';
+    if (end) newEnd = fromMinutes(Math.min(toMinutes(end) + toMinutes(form.time.value) - toMinutes(prevStart), 23 * 60 + 45));
+    if (newEnd && toMinutes(newEnd) <= toMinutes(form.time.value)) newEnd = fromMinutes(toMinutes(form.time.value) + 60);
+    form.endTime.innerHTML = endOptions(form.time.value, newEnd, step);
+    prevStart = form.time.value;
   });
 }
 

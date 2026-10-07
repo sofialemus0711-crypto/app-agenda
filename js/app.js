@@ -4,13 +4,14 @@ import * as store from './store.js';
 import { renderWeek, goToToday } from './view-week.js';
 import { renderEvents } from './view-events.js';
 import { renderThings } from './view-things.js';
+import { renderUni } from './view-uni.js';
 import { startReminders } from './reminders.js';
 import { startSync, onStatus } from './sync.js';
 import { openSyncSheet, statusLabel, statusKind } from './sync-ui.js';
 import { toast } from './ui.js';
 import { todayKey } from './dates.js';
 
-const SECTIONS = ['semana', 'eventos', 'cosas'];
+const SECTIONS = ['semana', 'eventos', 'cosas', 'universidad'];
 const main = document.getElementById('view');
 const mq = window.matchMedia('(max-width: 760px)');
 
@@ -30,7 +31,8 @@ function render() {
   const scroll = window.scrollY;
   if (section === 'semana') renderWeek(main, mq.matches);
   else if (section === 'eventos') renderEvents(main);
-  else renderThings(main);
+  else if (section === 'cosas') renderThings(main);
+  else renderUni(main, mq.matches);
   return scroll;
 }
 

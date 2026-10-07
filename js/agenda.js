@@ -2,7 +2,10 @@
 //
 // Actividad:
 //   title        texto
-//   time         "HH:MM"
+//   time         "HH:MM" (hora de inicio)
+//   endTime      "HH:MM" o null (hora de finalización)
+//   kind         'class' para las clases de la universidad (solo se ven en UNIVERSIDAD, no en MI SEMANA)
+//   room         salón (solo clases)
 //   repeatDays   [] = una sola vez; [1,3,5] = lunes, miércoles y viernes (1 = lunes … 7 = domingo)
 //   date         "AAAA-MM-DD" (solo para actividades de una sola vez)
 //   startDate    lunes de la semana en que empieza la repetición
@@ -10,7 +13,7 @@
 //   doneDates    fechas en que se marcó como realizada
 
 import * as store from './store.js';
-import { weekday, mondayOf } from './dates.js';
+import { weekday, mondayOf, toMinutes, fromMinutes, START_HOUR } from './dates.js';
 
 export const REMINDER_OPTIONS = [
   { value: 0, label: 'Sin recordatorio' },
@@ -31,12 +34,30 @@ export function occursOn(a, dateKey) {
   return a.date === dateKey;
 }
 
-// Actividades de un día, ordenadas por hora
+// Actividades de MI SEMANA de un día, ordenadas por hora (las clases van aparte)
 export function activitiesOn(dateKey) {
   return store
     .list('activities')
-    .filter((a) => occursOn(a, dateKey))
+    .filter((a) => !isClass(a) && occursOn(a, dateKey))
     .sort((x, y) => x.time.localeCompare(y.time) || (x.createdAt || 0) - (y.createdAt || 0));
+}
+
+export function isClass(a) {
+  return a.kind === 'class';
+}
+
+export function classes() {
+  return store.list('activities').filter(isClass);
+}
+
+// Horas de la cuadrícula (además de la de inicio) que ocupa una actividad
+export function continuationHours(a) {
+  if (!a.endTime) return [];
+  const startH = Math.max(Number(a.time.split(':')[0]), START_HOUR);
+  const end = toMinutes(a.endTime);
+  const out = [];
+  for (let h = startH + 1; h * 60 < end; h++) out.push(h);
+  return out;
 }
 
 export function isDone(a, dateKey) {
@@ -51,15 +72,20 @@ export function toggleDone(id, dateKey) {
   store.update('activities', id, { doneDates: [...set] });
 }
 
-export function saveActivity({ id, title, time, date, repeatDays, reminder }) {
+export function saveActivity({ id, title, time, endTime, date, repeatDays, reminder, kind, room }) {
   const repeating = repeatDays && repeatDays.length > 0;
   const data = {
     title: title.trim(),
     time,
+    endTime: endTime && toMinutes(endTime) > toMinutes(time) ? endTime : null,
     reminder: Number(reminder) || 0,
     repeatDays: repeating ? [...repeatDays].sort() : [],
     date: repeating ? null : date,
   };
+  if (kind === 'class') {
+    data.kind = 'class';
+    data.room = (room || '').trim();
+  }
   if (repeating) {
     const existing = id && store.get('activities', id);
     // La repetición empieza en la semana que se está viendo (o se conserva la anterior si ya existía)
@@ -74,8 +100,10 @@ export function saveActivity({ id, title, time, date, repeatDays, reminder }) {
 export function moveActivity(id, fromDate, toDate, toTime) {
   const a = store.get('activities', id);
   if (!a) return;
+  // La hora de finalización se mueve junto con la de inicio
+  const endTime = a.endTime ? fromMinutes(toMinutes(a.endTime) + toMinutes(toTime) - toMinutes(a.time)) : null;
   if (!isRepeating(a)) {
-    store.update('activities', id, { date: toDate, time: toTime });
+    store.update('activities', id, { date: toDate, time: toTime, endTime });
     return;
   }
   // En una actividad repetitiva: cambia la hora de toda la serie y,
@@ -85,7 +113,7 @@ export function moveActivity(id, fromDate, toDate, toTime) {
     days.delete(weekday(fromDate));
     days.add(weekday(toDate));
   }
-  const patch = { time: toTime, repeatDays: [...days].sort() };
+  const patch = { time: toTime, endTime, repeatDays: [...days].sort() };
   if (toDate < (a.startDate || '')) patch.startDate = mondayOf(toDate);
   store.update('activities', id, patch);
 }

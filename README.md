@@ -2,13 +2,14 @@
 
 Mi agenda personal: sencilla, elegante y fácil de usar en el celular y en el computador.
 
-Solo hace tres cosas:
+Tiene cuatro secciones:
 
 | Sección | Para qué sirve |
 | --- | --- |
 | 🗓 **Mi semana** | Qué voy a hacer y a qué hora, durante toda la semana. |
 | 🔔 **Eventos** | Eventos futuros que quiero recordar, con recordatorio. |
 | 📝 **Cosas sueltas** | Pendientes y cosas que no quiero olvidar. |
+| 🎓 **Universidad** | Mi horario de clases (aparte de Mi semana). |
 
 > ¿Tiene una hora? → **Mi semana** · ¿Ocurrirá en el futuro? → **Eventos** · ¿Está pendiente pero todavía no sé cuándo? → **Cosas sueltas**
 
@@ -24,7 +25,8 @@ Solo hace tres cosas:
 ### Mi semana
 - Es la pantalla que aparece al abrir la app.
 - **Toca una hora** para agregar una actividad en ese día y esa hora, o usa **+ Agregar actividad**.
-- El formulario solo pide: actividad, día, hora, repetir y recordatorio.
+- El formulario solo pide: actividad, día, **desde / hasta** (hora de inicio y de finalización), repetir y recordatorio.
+  La actividad ocupa en el calendario todas las horas que dura. La hora de fin es opcional (*Sin hora de fin*).
 - **Repetir:** *No repetir*, *Todos los días*, *Lunes a viernes* o *Elegir días…* (marcas L, M, X, J, V, S, D).
   La actividad aparece sola todas las semanas; no hay que copiarla.
 - **Toca una actividad** para editarla, cambiar el día, la hora, la repetición o el recordatorio, **marcarla como realizada** o **eliminarla**.
@@ -39,6 +41,15 @@ Solo hace tres cosas:
 
 ### Cosas sueltas
 - Escribe y presiona **Guardar** (o Enter). Marca la casilla cuando esté hecha (✓) o elimínala con la ×.
+
+### Universidad
+- **+ Agregar clase**: materia, días (L, M, X, J, V, S, D), desde / hasta (cada 15 minutos) y salón (opcional).
+- En el computador se ve como un horario semanal donde cada clase ocupa su duración; en el celular, agrupado por día.
+- Es un espacio aparte: las clases **no** aparecen en Mi semana. Toca una clase para editarla o eliminarla.
+
+| Computador | Celular |
+| --- | --- |
+| ![Universidad en computador](docs/computador-universidad.png) | ![Universidad en celular](docs/celular-universidad.png) |
 
 ---
 
@@ -107,14 +118,14 @@ js/sync.js            sincronización con Supabase (API REST, sin librerías)
 js/agenda.js          lógica de actividades (repetición, realizadas, mover)
 js/events.js          lógica de eventos (orden, días que faltan, momento del aviso)
 js/reminders.js       recordatorios y notificaciones
-js/view-*.js          pantallas: Mi semana, Eventos, Cosas sueltas
+js/view-*.js          pantallas: Mi semana, Eventos, Cosas sueltas, Universidad
 js/sync-ui.js         hoja de inicio de sesión / sincronización
 sw.js                 service worker (sin conexión + notificaciones)
 supabase/schema.sql   tabla, permisos y regla "gana el cambio más reciente"
 tests/                prueba completa en navegador (computador, celular, recordatorios y sincronización)
 ```
 
-**Modelo de datos:** cada elemento (`activities`, `events`, `things`) tiene `id` y `updatedAt`. Los eliminados se guardan como "lápidas" (`deleted: true`) para que la eliminación llegue a todos los dispositivos. En el servidor, todo vive en una tabla `items` con el contenido en JSON.
+**Modelo de datos:** cada elemento (`activities`, `events`, `things`) tiene `id` y `updatedAt`. Las clases de la universidad son actividades con `kind: 'class'` (solo se muestran en Universidad). Los eliminados se guardan como "lápidas" (`deleted: true`) para que la eliminación llegue a todos los dispositivos. En el servidor, todo vive en una tabla `items` con el contenido en JSON.
 
 **Pruebas:**
 

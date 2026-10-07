@@ -65,13 +65,30 @@ export function hourLabel(h) {
   return formatTime(`${h}:00`);
 }
 
-// Opciones de hora para los formularios (cada 30 minutos)
-export function timeOptions() {
+// Opciones de hora para los formularios (de 6:00 a. m. a 10:00 p. m.)
+export function timeOptions(step = 30) {
   const out = [];
-  for (let h = START_HOUR; h <= END_HOUR; h++) {
-    out.push(`${pad(h)}:00`, `${pad(h)}:30`);
-  }
+  for (let m = 6 * 60; m <= 22 * 60; m += step) out.push(fromMinutes(m));
   return out;
+}
+
+export function toMinutes(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+export function fromMinutes(total) {
+  const t = Math.max(0, Math.min(total, 23 * 60 + 59));
+  return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+}
+
+// "9:00 – 11:00 a. m." / "11:00 a. m. – 1:00 p. m." / "9:00 a. m." (sin fin)
+export function formatRange(start, end) {
+  if (!end) return formatTime(start);
+  const a = formatTime(start);
+  const b = formatTime(end);
+  const sa = a.slice(-5);
+  return sa === b.slice(-5) ? `${a.slice(0, -6)} – ${b}` : `${a} – ${b}`;
 }
 
 export function normalizeTime(hhmm) {
