@@ -1,0 +1,17 @@
+{
+  "name": "MI AGENDA",
+  "short_name": "Mi Agenda",
+  "description": "Mi agenda personal: mi semana, eventos y cosas sueltas.",
+  "lang": "es",
+  "start_url": "./#semana",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F7F4EE",
+  "theme_color": "#F7F4EE",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
