@@ -276,7 +276,7 @@ for (const t of ['Llamar a María', 'Comprar flores', 'Revisar cotización', 'Pr
   await A.fill('#thing-input', t);
   await A.press('#thing-input', 'Enter');
 }
-ok(await A.locator('.thing').count() === 4, 'Se agregan cosas sueltas rápidamente');
+ok(await A.locator('.thing:not([data-thing^="nav26-"])').count() === 4, 'Se agregan cosas sueltas rápidamente');
 ok(await A.evaluate(() => document.activeElement.id === 'thing-input'), 'El cursor queda listo para escribir otra');
 await A.locator('.thing', { hasText: 'Comprar flores' }).locator('button.check').click();
 ok(await A.locator('.things.is-done .thing', { hasText: 'Comprar flores' }).count() === 1, 'Marcada como hecha (✓, tachada)');
@@ -288,7 +288,7 @@ await A.screenshot({ path: `${OUT}/t-desktop-things.png` });
 console.log('\nGUARDADO');
 await A.reload();
 await A.waitForSelector('.view-things');
-ok(await A.locator('.thing').count() === 3, 'Tras recargar, las cosas sueltas siguen ahí');
+ok(await A.locator('.thing:not([data-thing^="nav26-"])').count() === 3, 'Tras recargar, las cosas sueltas siguen ahí');
 await A.click('.side-nav [data-nav="semana"]'); await A.waitForTimeout(200);
 ok(await chipIn(A, dayKey(0), 18, 'Pilates').count() === 1 && await chipIn(A, dayKey(0), 18, 'Pilates').evaluate((e) => e.classList.contains('is-done')), 'Tras recargar, actividades y "realizada" se conservan');
 await A.click('.side-nav [data-nav="eventos"]'); await A.waitForTimeout(200);
@@ -392,7 +392,7 @@ await B.screenshot({ path: `${OUT}/t-mobile-sheet.png` });
 await B.click('.sheet [data-close]');
 await B.click('.tabbar [data-nav="cosas"]'); await B.waitForTimeout(200);
 await B.fill('#thing-input', 'Comprar regalo'); await B.click('.quick-add button');
-ok(await B.locator('.thing').count() === 1, 'Cosas sueltas en el celular');
+ok(await B.locator('.thing:not([data-thing^="nav26-"])').count() === 1, 'Cosas sueltas en el celular');
 // tamaños táctiles
 const small = await B.evaluate(() => [...document.querySelectorAll('.tabbar a, .check, .quick-add .btn, .fab, [data-remove]')].filter((e) => e.offsetParent && Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height) < 28).length);
 ok(small === 0, 'Botones cómodos para el dedo');
