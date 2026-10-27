@@ -293,6 +293,15 @@ ok((await A.locator('.meta-progress').textContent()).includes('1 de 69'), 'Marca
 await A.fill('#meta-input', 'Pedir acceso a una cuenta de práctica');
 await A.press('#meta-input', 'Enter');
 ok((await A.locator('.meta-group').first().textContent()).includes('Mis tareas') && await A.locator('.view-meta .thing', { hasText: 'Pedir acceso' }).count() === 1, 'Agregar una tarea propia en Meta');
+await A.locator('.view-meta .thing', { hasText: 'Pedir acceso' }).locator('[data-edit].meta-edit').click();
+await A.fill('.sheet textarea[name="text"]', 'Pedir acceso de lectura a una cuenta');
+await A.selectOption('.sheet select[name="group"]', { label: 'Semana 2 · 3 – 9 nov · Guiones, CapCut y grabación' });
+await A.screenshot({ path: `${OUT}/t-desktop-meta-edit.png` });
+await A.click('.sheet button[type="submit"]'); await A.waitForTimeout(300);
+{
+  const g2 = A.locator('.meta-group', { hasText: 'Semana 2' }).locator('xpath=following-sibling::ul[1]');
+  ok(await g2.locator('.thing', { hasText: 'Pedir acceso de lectura' }).count() === 1 && await A.locator('.meta-group', { hasText: 'Mis tareas' }).count() === 0, 'Editar una tarea de Meta: texto y semana');
+}
 await A.screenshot({ path: `${OUT}/t-desktop-meta.png` });
 await A.click('.side-nav [data-nav="cosas"]'); await A.waitForTimeout(200);
 

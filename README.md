@@ -46,6 +46,7 @@ Tiene cinco secciones:
 ### Meta
 - Trae cargado el checklist de la campaña de Navidad corporativa de Chef & Bakery (27 oct 2026 – 18 ene 2027), agrupado por semana.
 - Marca cada tarea cuando esté hecha; arriba se ve el avance. Elimina con la × las que no necesites.
+- **Toca una tarea o el lápiz** para editarla: cambiar el texto, pasarla a otra semana, marcarla como hecha o eliminarla.
 - Escribe una tarea y presiona **Guardar** para agregarla a *Mis tareas*.
 - Es un espacio aparte: estas tareas **no** aparecen en Cosas sueltas.
 

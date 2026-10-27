@@ -2,7 +2,7 @@
 // Las tareas se guardan como cosas sueltas con section = 'meta' (así se sincronizan igual que lo demás).
 
 import * as store from './store.js';
-import { esc, icons, toast } from './ui.js';
+import { esc, icons, toast, showSheet, closeSheet, confirmSheet } from './ui.js';
 import { META_GROUPS } from './seed-navidad.js';
 
 const MINE = 'Mis tareas';
@@ -90,9 +90,78 @@ export function renderMeta(root) {
       toast('Eliminado', t.text, 2000);
       return;
     }
+    if (e.target.closest('[data-edit]')) return openTaskForm(t);
     if (e.target.closest('[data-check]')) {
       store.update('things', id, { done: !t.done, doneAt: t.done ? null : Date.now() });
     }
+  });
+}
+
+// Editar una tarea: texto y semana a la que pertenece
+function openTaskForm(t) {
+  const groups = [MINE, ...META_GROUPS];
+  const current = groups.includes(t.group) ? t.group : MINE;
+  const content = `
+    <form class="form" novalidate>
+      <label class="field">
+        <span class="field-label">Tarea</span>
+        <textarea name="text" rows="3" maxlength="200">${esc(t.text)}</textarea>
+      </label>
+      <label class="field">
+        <span class="field-label">Semana</span>
+        <select name="group">
+          ${groups.map((g) => `<option value="${esc(g)}" ${g === current ? 'selected' : ''}>${esc(g)}</option>`).join('')}
+        </select>
+      </label>
+      <label class="field-check">
+        <input name="done" type="checkbox" ${t.done ? 'checked' : ''}>
+        <span>Hecha</span>
+      </label>
+      <p class="form-error" data-error hidden></p>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+      <button type="button" class="btn-text danger" data-delete>${icons.trash}<span>Eliminar tarea</span></button>
+    </form>`;
+
+  showSheet({
+    title: 'Editar tarea',
+    content,
+    onReady(sheet) {
+      const form = sheet.querySelector('form');
+      const errorEl = form.querySelector('[data-error]');
+      form.text.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          form.requestSubmit();
+        }
+      });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = form.text.value.replace(/\s+/g, ' ').trim();
+        if (!text) {
+          errorEl.textContent = 'Escribe la tarea.';
+          errorEl.hidden = false;
+          return form.text.focus();
+        }
+        const done = form.done.checked;
+        store.update('things', t.id, {
+          text,
+          group: form.group.value,
+          section: 'meta',
+          done,
+          doneAt: done ? t.doneAt || Date.now() : null,
+        });
+        closeSheet();
+        toast('Tarea actualizada', text, 2200);
+      });
+      form.querySelector('[data-delete]').addEventListener('click', async () => {
+        if (await confirmSheet({ title: 'Eliminar tarea', text: `¿Eliminar “${t.text}”?` })) {
+          store.remove('things', t.id);
+          toast('Eliminado', t.text, 2000);
+        }
+      });
+    },
   });
 }
 
@@ -101,7 +170,8 @@ function row(t) {
     <li class="thing ${t.done ? 'is-done' : ''}" data-thing="${t.id}">
       <button type="button" class="check ${t.done ? 'is-checked' : ''}" data-check role="checkbox" aria-checked="${!!t.done}"
               aria-label="${t.done ? 'Marcar como pendiente' : 'Marcar como hecho'}: ${esc(t.text)}">${icons.check}</button>
-      <span class="thing-text" data-check>${esc(t.text)}</span>
+      <span class="thing-text" data-edit>${esc(t.text)}</span>
+      <button type="button" class="icon-btn meta-edit" data-edit aria-label="Editar: ${esc(t.text)}">${icons.edit}</button>
       <button type="button" class="icon-btn subtle" data-remove aria-label="Eliminar: ${esc(t.text)}">${icons.close}</button>
     </li>`;
 }
