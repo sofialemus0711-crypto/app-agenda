@@ -1,10 +1,11 @@
-// MI AGENDA — punto de entrada: navegación entre las tres secciones.
+// MI AGENDA — punto de entrada: navegación entre las secciones.
 
 import * as store from './store.js';
 import { renderWeek, goToToday } from './view-week.js';
 import { renderEvents } from './view-events.js';
 import { renderThings } from './view-things.js';
 import { renderUni } from './view-uni.js';
+import { renderMeta } from './view-meta.js';
 import { seedUniversity } from './seed-uni.js';
 import { seedNavidad } from './seed-navidad.js';
 import { startReminders } from './reminders.js';
@@ -13,7 +14,7 @@ import { openSyncSheet, statusLabel, statusKind } from './sync-ui.js';
 import { toast } from './ui.js';
 import { todayKey } from './dates.js';
 
-const SECTIONS = ['semana', 'eventos', 'cosas', 'universidad'];
+const SECTIONS = ['semana', 'eventos', 'cosas', 'universidad', 'meta'];
 const main = document.getElementById('view');
 const mq = window.matchMedia('(max-width: 760px)');
 
@@ -34,6 +35,7 @@ function render() {
   if (section === 'semana') renderWeek(main, mq.matches);
   else if (section === 'eventos') renderEvents(main);
   else if (section === 'cosas') renderThings(main);
+  else if (section === 'meta') renderMeta(main);
   else renderUni(main, mq.matches);
   return scroll;
 }

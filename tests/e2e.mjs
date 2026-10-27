@@ -276,7 +276,7 @@ for (const t of ['Llamar a María', 'Comprar flores', 'Revisar cotización', 'Pr
   await A.fill('#thing-input', t);
   await A.press('#thing-input', 'Enter');
 }
-ok(await A.locator('.thing:not([data-thing^="nav26-"])').count() === 4, 'Se agregan cosas sueltas rápidamente');
+ok(await A.locator('.thing').count() === 4, 'Se agregan cosas sueltas rápidamente');
 ok(await A.evaluate(() => document.activeElement.id === 'thing-input'), 'El cursor queda listo para escribir otra');
 await A.locator('.thing', { hasText: 'Comprar flores' }).locator('button.check').click();
 ok(await A.locator('.things.is-done .thing', { hasText: 'Comprar flores' }).count() === 1, 'Marcada como hecha (✓, tachada)');
@@ -284,11 +284,23 @@ await A.locator('.thing', { hasText: 'Revisar cotización' }).locator('[data-rem
 ok(await A.locator('.thing', { hasText: 'Revisar cotización' }).count() === 0, 'Cosa suelta eliminada');
 await A.screenshot({ path: `${OUT}/t-desktop-things.png` });
 
+// ======================= META =======================
+console.log('\nCOMPUTADOR — Meta');
+await A.click('.side-nav [data-nav="meta"]'); await A.waitForTimeout(200);
+ok(await A.locator('.view-meta .thing').count() === 69 && await A.locator('.meta-group').count() === 11, 'Meta trae el checklist de Navidad agrupado por semana');
+await A.locator('.view-meta .thing').first().locator('button.check').click();
+ok((await A.locator('.meta-progress').textContent()).includes('1 de 69'), 'Marcar una tarea de Meta actualiza el avance');
+await A.fill('#meta-input', 'Pedir acceso a una cuenta de práctica');
+await A.press('#meta-input', 'Enter');
+ok((await A.locator('.meta-group').first().textContent()).includes('Mis tareas') && await A.locator('.view-meta .thing', { hasText: 'Pedir acceso' }).count() === 1, 'Agregar una tarea propia en Meta');
+await A.screenshot({ path: `${OUT}/t-desktop-meta.png` });
+await A.click('.side-nav [data-nav="cosas"]'); await A.waitForTimeout(200);
+
 // ======================= PERSISTENCIA =======================
 console.log('\nGUARDADO');
 await A.reload();
 await A.waitForSelector('.view-things');
-ok(await A.locator('.thing:not([data-thing^="nav26-"])').count() === 3, 'Tras recargar, las cosas sueltas siguen ahí');
+ok(await A.locator('.thing').count() === 3, 'Tras recargar, las cosas sueltas siguen ahí');
 await A.click('.side-nav [data-nav="semana"]'); await A.waitForTimeout(200);
 ok(await chipIn(A, dayKey(0), 18, 'Pilates').count() === 1 && await chipIn(A, dayKey(0), 18, 'Pilates').evaluate((e) => e.classList.contains('is-done')), 'Tras recargar, actividades y "realizada" se conservan');
 await A.click('.side-nav [data-nav="eventos"]'); await A.waitForTimeout(200);
@@ -346,7 +358,7 @@ console.log('\nCELULAR');
 const { ctx: ctxB, page: B } = await newPage(true);
 await B.goto(BASE);
 await B.waitForSelector('.day-list');
-ok(await B.locator('.sidebar').isHidden() && await B.locator('.tabbar a').count() === 4, 'Barra inferior: Mi semana | Eventos | Cosas sueltas | Universidad');
+ok(await B.locator('.sidebar').isHidden() && await B.locator('.tabbar a').count() === 5, 'Barra inferior: Mi semana | Eventos | Cosas sueltas | Universidad | Meta');
 ok(await B.locator('.week-grid').count() === 0, 'En celular no se reduce la cuadrícula: vista por día');
 const dayTitle = (await B.locator('.day-title').innerText()).replace(/\s+/g, ' ');
 ok(dayTitle.length > 5, 'Encabezado del día: ' + dayTitle);
@@ -392,7 +404,7 @@ await B.screenshot({ path: `${OUT}/t-mobile-sheet.png` });
 await B.click('.sheet [data-close]');
 await B.click('.tabbar [data-nav="cosas"]'); await B.waitForTimeout(200);
 await B.fill('#thing-input', 'Comprar regalo'); await B.click('.quick-add button');
-ok(await B.locator('.thing:not([data-thing^="nav26-"])').count() === 1, 'Cosas sueltas en el celular');
+ok(await B.locator('.thing').count() === 1, 'Cosas sueltas en el celular');
 // tamaños táctiles
 const small = await B.evaluate(() => [...document.querySelectorAll('.tabbar a, .check, .quick-add .btn, .fab, [data-remove]')].filter((e) => e.offsetParent && Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height) < 28).length);
 ok(small === 0, 'Botones cómodos para el dedo');

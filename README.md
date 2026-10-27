@@ -2,7 +2,7 @@
 
 Mi agenda personal: sencilla, elegante y fácil de usar en el celular y en el computador.
 
-Tiene cuatro secciones:
+Tiene cinco secciones:
 
 | Sección | Para qué sirve |
 | --- | --- |
@@ -10,6 +10,7 @@ Tiene cuatro secciones:
 | 🔔 **Eventos** | Eventos futuros que quiero recordar, con recordatorio. |
 | 📝 **Cosas sueltas** | Pendientes y cosas que no quiero olvidar. |
 | 🎓 **Universidad** | Mi horario de clases (aparte de Mi semana). |
+| 📣 **Meta** | Checklist de mis campañas de Meta Ads, agrupado por semana. |
 
 > ¿Tiene una hora? → **Mi semana** · ¿Ocurrirá en el futuro? → **Eventos** · ¿Está pendiente pero todavía no sé cuándo? → **Cosas sueltas**
 
@@ -41,6 +42,12 @@ Tiene cuatro secciones:
 
 ### Cosas sueltas
 - Escribe y presiona **Guardar** (o Enter). Marca la casilla cuando esté hecha (✓) o elimínala con la ×.
+
+### Meta
+- Trae cargado el checklist de la campaña de Navidad corporativa de Chef & Bakery (27 oct 2026 – 18 ene 2027), agrupado por semana.
+- Marca cada tarea cuando esté hecha; arriba se ve el avance. Elimina con la × las que no necesites.
+- Escribe una tarea y presiona **Guardar** para agregarla a *Mis tareas*.
+- Es un espacio aparte: estas tareas **no** aparecen en Cosas sueltas.
 
 ### Universidad
 - **+ Agregar clase**: materia, días (L, M, X, J, V, S, D), desde / hasta (cada 15 minutos) y salón (opcional).
@@ -118,14 +125,15 @@ js/sync.js            sincronización con Supabase (API REST, sin librerías)
 js/agenda.js          lógica de actividades (repetición, realizadas, mover)
 js/events.js          lógica de eventos (orden, días que faltan, momento del aviso)
 js/reminders.js       recordatorios y notificaciones
-js/view-*.js          pantallas: Mi semana, Eventos, Cosas sueltas, Universidad
+js/view-*.js          pantallas: Mi semana, Eventos, Cosas sueltas, Universidad, Meta
+js/seed-*.js          datos cargados una sola vez (horario de clases, checklist de Meta)
 js/sync-ui.js         hoja de inicio de sesión / sincronización
 sw.js                 service worker (sin conexión + notificaciones)
 supabase/schema.sql   tabla, permisos y regla "gana el cambio más reciente"
 tests/                prueba completa en navegador (computador, celular, recordatorios y sincronización)
 ```
 
-**Modelo de datos:** cada elemento (`activities`, `events`, `things`) tiene `id` y `updatedAt`. Las clases de la universidad son actividades con `kind: 'class'` (solo se muestran en Universidad). Los eliminados se guardan como "lápidas" (`deleted: true`) para que la eliminación llegue a todos los dispositivos. En el servidor, todo vive en una tabla `items` con el contenido en JSON.
+**Modelo de datos:** cada elemento (`activities`, `events`, `things`) tiene `id` y `updatedAt`. Las clases de la universidad son actividades con `kind: 'class'` (solo se muestran en Universidad). Las tareas de Meta son cosas sueltas con `section: 'meta'` y un `group` (solo se muestran en Meta). Los eliminados se guardan como "lápidas" (`deleted: true`) para que la eliminación llegue a todos los dispositivos. En el servidor, todo vive en una tabla `items` con el contenido en JSON.
 
 **Pruebas:**
 

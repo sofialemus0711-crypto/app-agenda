@@ -2,12 +2,13 @@
 
 import * as store from './store.js';
 import { esc, icons, toast } from './ui.js';
+import { isMeta } from './view-meta.js';
 
 // Lo que se está escribiendo se conserva aunque la pantalla se actualice
 let draft = '';
 
 export function renderThings(root) {
-  const items = store.list('things');
+  const items = store.list('things').filter((t) => !isMeta(t));
   const pending = items.filter((t) => !t.done).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const done = items.filter((t) => t.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   const hadFocus = document.activeElement && document.activeElement.name === 'thing';
