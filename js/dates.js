@@ -65,10 +65,10 @@ export function hourLabel(h) {
   return formatTime(`${h}:00`);
 }
 
-// Opciones de hora para los formularios (de 6:00 a. m. a 10:00 p. m.)
+// Opciones de hora para los formularios: todo el día (12:00 a. m. a 11:30 p. m.)
 export function timeOptions(step = 30) {
   const out = [];
-  for (let m = 6 * 60; m <= 22 * 60; m += step) out.push(fromMinutes(m));
+  for (let m = 0; m < 24 * 60; m += step) out.push(fromMinutes(m));
   return out;
 }
 

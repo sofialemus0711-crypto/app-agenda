@@ -13,7 +13,7 @@
 //   doneDates    fechas en que se marcó como realizada
 
 import * as store from './store.js';
-import { weekday, mondayOf, toMinutes, fromMinutes, START_HOUR } from './dates.js';
+import { weekday, mondayOf, toMinutes, fromMinutes } from './dates.js';
 
 export const REMINDER_OPTIONS = [
   { value: 0, label: 'Sin recordatorio' },
@@ -53,7 +53,7 @@ export function classes() {
 // Horas de la cuadrícula (además de la de inicio) que ocupa una actividad
 export function continuationHours(a) {
   if (!a.endTime) return [];
-  const startH = Math.max(Number(a.time.split(':')[0]), START_HOUR);
+  const startH = Number(a.time.split(':')[0]);
   const end = toMinutes(a.endTime);
   const out = [];
   for (let h = startH + 1; h * 60 < end; h++) out.push(h);

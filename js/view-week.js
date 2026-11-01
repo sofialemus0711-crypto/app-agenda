@@ -22,7 +22,22 @@ const view = {
 let rootEl = null;
 let mobile = false;
 
-const hours = () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+// Horas visibles: de 7:00 a. m. a 8:00 p. m., y se amplía si hay actividades más temprano o más tarde
+const range = { start: START_HOUR, end: END_HOUR };
+
+function fitRange(dates) {
+  range.start = START_HOUR;
+  range.end = END_HOUR;
+  for (const d of dates) {
+    for (const a of activitiesOn(d)) {
+      range.start = Math.min(range.start, hourOf(a.time));
+      const last = a.endTime ? Math.ceil(toMinutes(a.endTime) / 60) - 1 : hourOf(a.time);
+      range.end = Math.max(range.end, hourOf(a.time), last);
+    }
+  }
+}
+
+const hours = () => Array.from({ length: range.end - range.start + 1 }, (_, i) => range.start + i);
 
 export function renderWeek(root, isMobile) {
   rootEl = root;
@@ -61,6 +76,7 @@ export function renderWeek(root, isMobile) {
 
 function desktopGrid(days) {
   const today = todayKey();
+  fitRange(days);
   const perDay = Object.fromEntries(days.map((d) => [d, activitiesOn(d)]));
   const head = days
     .map((d, i) => `
@@ -98,12 +114,12 @@ function desktopGrid(days) {
 }
 
 function slotHour(time) {
-  return Math.min(Math.max(hourOf(time), START_HOUR), END_HOUR);
+  return Math.min(Math.max(hourOf(time), range.start), range.end);
 }
 
 function chip(a, date) {
   const done = isDone(a, date);
-  const showTime = a.endTime || !a.time.endsWith(':00') || hourOf(a.time) < START_HOUR || hourOf(a.time) > END_HOUR;
+  const showTime = a.endTime || !a.time.endsWith(':00');
   return `
     <div class="chip ${done ? 'is-done' : ''} ${isRepeating(a) ? 'is-repeat' : ''}" data-activity="${a.id}" data-date="${date}" tabindex="0" role="button"
          aria-label="${esc(a.title)}, ${esc(formatRange(a.time, a.endTime))}${done ? ', realizada' : ''}">
@@ -160,12 +176,13 @@ function modeToggle() {
 
 function mobileDay(date) {
   const items = activitiesOn(date);
-  const before = items.filter((a) => hourOf(a.time) < START_HOUR);
-  const after = items.filter((a) => hourOf(a.time) > END_HOUR);
+  fitRange([date]);
+  const before = items.filter((a) => hourOf(a.time) < range.start);
+  const after = items.filter((a) => hourOf(a.time) > range.end);
   const rows = hours()
     .map((h) => {
       const here = items.filter((a) => hourOf(a.time) === h);
-      const extra = h === START_HOUR ? before : h === END_HOUR ? after : [];
+      const extra = h === range.start ? before : h === range.end ? after : [];
       const all = [...extra, ...here];
       const conts = items.filter((a) => !all.includes(a) && continuationHours(a).includes(h));
       return `
@@ -310,7 +327,7 @@ function defaultAddDate() {
 
 function defaultTime() {
   const h = new Date().getHours() + 1;
-  const hh = Math.min(Math.max(h, START_HOUR), END_HOUR);
+  const hh = Math.min(h, 23);
   return `${String(hh).padStart(2, '0')}:00`;
 }
 

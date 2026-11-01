@@ -1,5 +1,7 @@
 // Prueba completa de MI AGENDA en un navegador real (computador y celular).
 // Uso: npm install && npm test
+// Mismo huso horario que el navegador de la prueba (Colombia)
+process.env.TZ = 'America/Bogota';
 import { chromium } from 'playwright';
 import http from 'http';
 import fs from 'fs';
@@ -198,6 +200,31 @@ ok((await A.locator('.sheet-head h2').textContent()) === 'Editar actividad', 'To
 await A.selectOption('.sheet select[name="endTime"]', '');
 await saveSheet(A);
 ok(await A.locator('.cont', { hasText: 'Clase de inglés' }).count() === 0, '"Sin hora de fin" también funciona');
+
+// Todas las horas del día
+await A.click('.view-head [data-add]');
+const opts = await A.locator('.sheet select[name="time"] option').evaluateAll((o) => o.map((x) => x.value));
+ok(opts[0] === '00:00' && opts.at(-1) === '23:30' && opts.length === 48, 'Horas disponibles de 12:00 a. m. a 11:30 p. m.');
+await A.fill('.sheet input[name="title"]', 'Correr');
+await A.selectOption('.sheet select[name="day"]', dayKey(1));
+await A.selectOption('.sheet select[name="time"]', '05:00');
+await A.selectOption('.sheet select[name="endTime"]', '06:00');
+await saveSheet(A);
+await A.click('.view-head [data-add]');
+await A.fill('.sheet input[name="title"]', 'Estudiar');
+await A.selectOption('.sheet select[name="day"]', dayKey(1));
+await A.selectOption('.sheet select[name="time"]', '21:00');
+await A.selectOption('.sheet select[name="endTime"]', '23:30');
+await saveSheet(A);
+ok(await chipIn(A, dayKey(1), 5, 'Correr').count() === 1 && (await A.locator('.grid-hour').first().textContent()).trim() === '5:00 a. m.', 'La semana se amplía para mostrar 5:00 a. m.');
+ok(await chipIn(A, dayKey(1), 21, 'Estudiar').count() === 1 && await cell(A, dayKey(1), 23).locator('.cont', { hasText: 'Estudiar' }).count() === 1, 'Y hasta las 11:00 p. m. (Estudiar 9:00 – 11:30 p. m.)');
+await A.click('[data-week="1"]');
+ok((await A.locator('.grid-hour').first().textContent()).trim() === '7:00 a. m.' && (await A.locator('.grid-hour').last().textContent()).trim() === '8:00 p. m.', 'Una semana sin horas extremas sigue de 7:00 a. m. a 8:00 p. m.');
+await A.click('[data-week="0"]');
+for (const t of ['Correr', 'Estudiar']) {
+  await A.locator('.chip', { hasText: t }).click();
+  await A.click('.sheet [data-delete]'); await A.click('.sheet [data-yes]'); await A.waitForTimeout(250);
+}
 
 // Universidad (aparte de Mi semana)
 console.log('\nCOMPUTADOR — Universidad');
